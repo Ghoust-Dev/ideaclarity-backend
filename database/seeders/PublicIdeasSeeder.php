@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PublicIdeasSeeder extends Seeder
 {
@@ -16,7 +15,6 @@ class PublicIdeasSeeder extends Seeder
     {
         $ideas = [
             [
-                'id' => Str::uuid(),
                 'title' => 'AI-Powered Task Manager',
                 'problem' => 'Helps developers prioritize tasks using GPT and auto-scheduling.',
                 'audience_tag' => 'Perfect for solo devs',
@@ -25,7 +23,6 @@ class PublicIdeasSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'id' => Str::uuid(),
                 'title' => 'Social Media Analytics Dashboard',
                 'problem' => 'Unifies all social metrics into one view for makers.',
                 'audience_tag' => 'Great for indie hackers',
@@ -34,7 +31,6 @@ class PublicIdeasSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'id' => Str::uuid(),
                 'title' => 'Local Business Directory SaaS',
                 'problem' => 'Allows small businesses to manage bookings and payments.',
                 'audience_tag' => 'Useful for freelancers & agencies',
@@ -43,7 +39,6 @@ class PublicIdeasSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'id' => Str::uuid(),
                 'title' => 'Micro-SaaS Profit Tracker',
                 'problem' => 'Tracks income, churn, and growth for solo founders.',
                 'audience_tag' => 'Loved by early-stage builders',
@@ -52,7 +47,6 @@ class PublicIdeasSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'id' => Str::uuid(),
                 'title' => 'Cold Email Sequence Generator',
                 'problem' => 'Helps freelancers auto-generate email sequences for leads.',
                 'audience_tag' => 'Optimized for freelance devs',

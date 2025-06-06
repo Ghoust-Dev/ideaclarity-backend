@@ -4,13 +4,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IdeaWallController;
 
-Route::get('/ping', function () {
-    return response()->json(['message' => 'pong']);
+// Health check endpoint for Railway
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now(),
+        'service' => 'IdeaClarity API'
+    ]);
 });
 
-// Public Ideas API endpoint
+// Public ideas endpoint
 Route::get('/public-ideas', [IdeaWallController::class, 'index']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+// User authentication endpoints
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 }); 
