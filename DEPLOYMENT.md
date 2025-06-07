@@ -1,5 +1,34 @@
 # IdeaClarity API - Railway Deployment Guide
 
+## Quick Fix for Healthcheck Issues
+
+If you're getting "Healthcheck failed!" errors, follow these steps:
+
+### 1. Make sure these environment variables are set in Railway:
+```
+APP_NAME="IdeaClarity API"
+APP_ENV=production
+APP_KEY=base64:generated-key-here
+APP_DEBUG=false
+APP_URL=https://ideaclarity-backend-production.up.railway.app
+
+DB_CONNECTION=pgsql
+DB_HOST=db.gyckxadiumjtdpxpsmbn.supabase.co
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=postgres
+DB_PASSWORD=iQ2DaR9kRDlSa4VK
+
+LOG_CHANNEL=stderr
+LOG_LEVEL=debug
+```
+
+### 2. Test these endpoints after deployment:
+- Root: `https://ideaclarity-backend-production.up.railway.app/`
+- Debug: `https://ideaclarity-backend-production.up.railway.app/debug`
+- Simple health: `https://ideaclarity-backend-production.up.railway.app/api/health`
+- Ping: `https://ideaclarity-backend-production.up.railway.app/api/ping`
+
 ## Prerequisites
 1. Railway account (https://railway.app)
 2. Supabase project set up with credentials
@@ -24,20 +53,6 @@ CREATE TABLE IF NOT EXISTS public.public_ideas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create an updated_at trigger
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_public_ideas_updated_at 
-    BEFORE UPDATE ON public.public_ideas 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
-
 -- Insert sample data
 INSERT INTO public.public_ideas (title, problem, audience_tag, demand_score) VALUES
 ('AI-Powered Task Manager', 'Helps developers prioritize tasks using GPT and auto-scheduling.', 'Perfect for solo devs', 92),
@@ -52,10 +67,6 @@ ALTER TABLE public.public_ideas ENABLE ROW LEVEL SECURITY;
 -- Create a policy to allow anyone to read public ideas (since they're public)
 CREATE POLICY "Public ideas are viewable by everyone" ON public.public_ideas
     FOR SELECT USING (true);
-
--- Create a policy to allow authenticated users to insert ideas (optional, for future admin features)
-CREATE POLICY "Authenticated users can insert public ideas" ON public.public_ideas
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 ```
 
 ## Step 2: Deploy to Railway
@@ -69,14 +80,14 @@ CREATE POLICY "Authenticated users can insert public ideas" ON public.public_ide
 
 ## Step 3: Configure Environment Variables in Railway
 
-In your Railway project dashboard, go to **Variables** tab and add:
+**IMPORTANT**: Make sure to set all these variables before the first deployment:
 
 ```
 APP_NAME="IdeaClarity API"
 APP_ENV=production
 APP_KEY=base64:YOUR_GENERATED_KEY_HERE
 APP_DEBUG=false
-APP_URL=https://your-railway-domain.up.railway.app
+APP_URL=https://ideaclarity-backend-production.up.railway.app
 
 DB_CONNECTION=pgsql
 DB_HOST=db.gyckxadiumjtdpxpsmbn.supabase.co
@@ -85,41 +96,74 @@ DB_DATABASE=postgres
 DB_USERNAME=postgres
 DB_PASSWORD=iQ2DaR9kRDlSa4VK
 
-SESSION_DRIVER=database
-CACHE_STORE=database
+LOG_CHANNEL=stderr
+LOG_LEVEL=debug
 ```
 
 ## Step 4: Generate Application Key
 
-After deployment, you can generate a new APP_KEY by running:
+Generate a new APP_KEY locally and add it to Railway:
 ```bash
+cd ideaclarity-api-backend
 php artisan key:generate --show
 ```
 
-Copy the generated key and update the `APP_KEY` variable in Railway.
+Copy the generated key and set it as the `APP_KEY` variable in Railway.
 
-## Step 5: Test the Deployment
+## Step 5: Manual Migration (if needed)
 
-Once deployed, test these endpoints:
-- Health check: `https://your-railway-domain.up.railway.app/api/health`
-- Public ideas: `https://your-railway-domain.up.railway.app/api/public-ideas`
+After the app is deployed and running, you can run migrations manually:
 
-## Step 6: Update Frontend API URL
+1. Go to Railway Dashboard → Your Project → Deployments
+2. Click on the latest deployment 
+3. Go to the "Variables" tab and temporarily add: `RAILWAY_RUN_UID=0`
+4. Use Railway's terminal or run:
+```bash
+php artisan migrate --force
+```
+
+## Step 6: Test the Deployment
+
+Test these endpoints in order:
+1. **Root**: `https://ideaclarity-backend-production.up.railway.app/`
+2. **Debug**: `https://ideaclarity-backend-production.up.railway.app/debug`
+3. **Health**: `https://ideaclarity-backend-production.up.railway.app/api/health`
+4. **Public Ideas**: `https://ideaclarity-backend-production.up.railway.app/api/public-ideas`
+
+## Step 7: Update Frontend API URL
 
 Update your frontend to use the Railway API URL:
 ```javascript
-const API_BASE_URL = 'https://your-railway-domain.up.railway.app/api';
+const API_BASE_URL = 'https://ideaclarity-backend-production.up.railway.app/api';
 ```
 
-## Troubleshooting
+## Debugging Common Issues
 
-1. **Database Connection Issues**: Verify Supabase credentials in Railway environment variables
-2. **CORS Issues**: Check that your frontend domain is added to the CORS middleware
-3. **Migration Issues**: Railway runs migrations automatically on deploy via the start command
+### Healthcheck Failed
+- **Solution**: Healthchecks are now disabled. The app should start without them.
+- **Test**: Visit the root URL to see if the app is responding.
+
+### App Key Not Set
+- **Symptoms**: "No application encryption key has been specified"
+- **Solution**: Generate and set APP_KEY in Railway environment variables
+
+### Database Connection Failed
+- **Symptoms**: SQLSTATE errors in logs
+- **Solution**: Verify all Supabase credentials in Railway environment variables
+- **Check**: Visit `/debug` endpoint to see if database is configured
+
+### 500 Internal Server Error
+- **Check**: Railway deployment logs for PHP errors
+- **Debug**: Visit `/debug` endpoint for configuration info
+
+### Port Issues
+- **Railway automatically sets PORT**: Don't manually set PORT variable
+- **Check**: The debug endpoint shows the port being used
 
 ## Railway Configuration Files
 
-- `railway.json`: Railway-specific deployment configuration
+- `railway.json`: Railway deployment configuration (healthchecks disabled)
 - `nixpacks.toml`: Build configuration with PHP and PostgreSQL
-- `Procfile`: Alternative process definition
+- `Procfile`: Simple process definition
+- `start.sh`: Alternative startup script for debugging
 - `.env.example`: Template for environment variables 

@@ -1,8 +1,10 @@
 [phases.setup]
-nixPkgs = ["php82", "php82Packages.composer", "postgresql"]
+nixPkgs = ["php82", "php82Packages.composer", "nodejs", "postgresql"]
 
 [phases.install]
-cmds = ["composer install --no-dev --optimize-autoloader"]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction"
+]
 
 [phases.build]
 cmds = [
@@ -12,4 +14,8 @@ cmds = [
 ]
 
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=$PORT" 
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+
+[variables]
+NIXPACKS_PHP_ROOT_DIR = "/app"
+NIXPACKS_PHP_FALLBACK_PATH = "/app/public/index.php" 
