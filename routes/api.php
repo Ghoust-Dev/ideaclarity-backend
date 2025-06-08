@@ -96,6 +96,34 @@ Route::get('/debug/tables', function () {
     }
 });
 
+// Debug public ideas IDs
+Route::get('/debug/ideas', function () {
+    try {
+        $ideas = \Illuminate\Support\Facades\DB::table('public_ideas')->limit(10)->get(['id', 'title']);
+        
+        $ideaData = [];
+        foreach ($ideas as $idea) {
+            $ideaData[] = [
+                'id' => $idea->id,
+                'id_type' => gettype($idea->id),
+                'title' => $idea->title,
+                'is_numeric' => is_numeric($idea->id)
+            ];
+        }
+        
+        return response()->json([
+            'ideas' => $ideaData,
+            'total_count' => \Illuminate\Support\Facades\DB::table('public_ideas')->count(),
+            'timestamp' => now()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Database error: ' . $e->getMessage(),
+            'timestamp' => now()
+        ], 500);
+    }
+});
+
 // Protected endpoints (require Supabase authentication)
 Route::middleware(['supabase.auth'])->group(function () {
     // User info endpoint

@@ -88,26 +88,48 @@ Generate only the tweet text, nothing else.";
             // DEBUG: Log that we've entered the method
             Log::info('🏁 COMPETITORS START:', [
                 'idea_id' => $idea_id,
+                'idea_id_type' => gettype($idea_id),
                 'user_id' => $request->attributes->get('user_id'),
                 'user_email' => $request->attributes->get('user_email')
             ]);
 
-            // Get the idea from public_ideas table
-            $idea = DB::table('public_ideas')->where('id', $idea_id)->first();
+            // Try to cast idea_id to integer first, then fallback to string
+            $numericId = is_numeric($idea_id) ? (int)$idea_id : null;
+            
+            Log::info('🔢 ID CONVERSION:', [
+                'original_id' => $idea_id,
+                'numeric_id' => $numericId,
+                'is_numeric' => is_numeric($idea_id)
+            ]);
+
+            // Get the idea from public_ideas table with proper type handling
+            $idea = null;
+            if ($numericId) {
+                $idea = DB::table('public_ideas')->where('id', $numericId)->first();
+                Log::info('📝 TRIED NUMERIC QUERY');
+            }
+            
+            // If numeric failed, try as string
+            if (!$idea) {
+                $idea = DB::table('public_ideas')->where('id', (string)$idea_id)->first();
+                Log::info('📝 TRIED STRING QUERY');
+            }
             
             if (!$idea) {
-                Log::warning('❌ IDEA NOT FOUND:', ['idea_id' => $idea_id]);
+                Log::warning('❌ IDEA NOT FOUND:', ['idea_id' => $idea_id, 'numeric_id' => $numericId]);
                 return response()->json(['error' => 'Idea not found'], 404);
             }
 
             Log::info('✅ IDEA FOUND:', [
                 'idea_title' => $idea->title ?? 'no_title',
-                'idea_problem' => $idea->problem_summary ?? 'no_problem'
+                'idea_problem' => $idea->problem_summary ?? 'no_problem',
+                'found_id' => $idea->id ?? 'no_id',
+                'found_id_type' => gettype($idea->id ?? null)
             ]);
 
             // Check for existing competitors (cache for 24 hours)
             $existingCompetitors = DB::table('competitor_results')
-                ->where('idea_id', $idea_id)
+                ->where('idea_id', $idea->id) // Use the actual ID from the found idea
                 ->where('created_at', '>', now()->subHours(24))
                 ->first();
 
@@ -175,10 +197,10 @@ Respond in clean JSON format like this:
 
             Log::info('💾 SAVING TO DATABASE');
 
-            // Save to database using Supabase user ID
+            // Save to database using the actual idea ID and Supabase user ID
             DB::table('competitor_results')->insert([
                 'id' => \Illuminate\Support\Str::uuid(),
-                'idea_id' => $idea_id,
+                'idea_id' => $idea->id, // Use the actual ID from the found idea
                 'user_id' => $request->attributes->get('user_id'), // From Supabase middleware
                 'competitors_data' => $competitorsJson,
                 'created_at' => now(),
