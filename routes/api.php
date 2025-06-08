@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IdeaWallController;
 use App\Http\Controllers\TweetGenerationController;
+use App\Http\Controllers\PromptController;
 
 // Simplest possible health check
 Route::get('/health', function () {
@@ -44,4 +45,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 // Tweet generation routes
 Route::post('/generate-tweet', [TweetGenerationController::class, 'generateTweet']);
 Route::post('/post-tweet', [TweetGenerationController::class, 'postTweet']);
-Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']); 
+Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']);
+
+// AI Prompt Generation Routes
+Route::prefix('prompts')->group(function () {
+    Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
+    Route::post('/competitors/{idea_id}', [PromptController::class, 'generateCompetitors']);
+    Route::post('/landing-page/{idea_id}', [PromptController::class, 'regenerateLandingPrompt']);
+}); 
