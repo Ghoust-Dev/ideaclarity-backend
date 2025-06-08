@@ -147,7 +147,7 @@ Generate only the tweet text, nothing else.";
             $prompt = "List 2-3 SaaS competitors similar to the following idea:
 
 Idea Name: {$idea->title}
-Problem Solved: {$idea->problem_summary}
+Problem Solved: " . ($idea->problem_summary ?? $idea->description ?? "Innovative solution for " . $idea->title) . "
 Target Audience: developers and tech professionals
 
 For each competitor, return:
@@ -236,14 +236,14 @@ Respond in clean JSON format like this:
             }
 
             $heroTitle = $request->input('hero_title', $idea->title . ' - Coming Soon');
-            $subtitle = $request->input('subtitle', $idea->problem_summary);
+            $subtitle = $request->input('subtitle', $idea->problem_summary ?? $idea->description ?? 'Innovative solution');
             $ctaText = $request->input('cta_text', 'Join Waitlist');
 
             // Generate landing page prompt using OpenAI
             $prompt = "Create a detailed landing page prompt for AI tools like v0.dev, Lovable, or Bolt for this SaaS idea:
 
 Title: {$idea->title}
-Problem: {$idea->problem_summary}
+Problem: " . ($idea->problem_summary ?? $idea->description ?? "Innovative solution for " . $idea->title) . "
 Hero Title: {$heroTitle}
 Subtitle: {$subtitle}
 CTA: {$ctaText}
