@@ -51,7 +51,7 @@ Requirements:
 Generate only the tweet text, nothing else.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-4',
+                'model' => 'gpt-3.5-turbo',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -68,7 +68,7 @@ Generate only the tweet text, nothing else.";
                 'idea_id' => $idea_id,
                 'type' => 'tweet',
                 'content' => $tweetContent,
-                'used_tool' => 'gpt-4',
+                'used_tool' => 'gpt-3.5-turbo',
                 'generated_at' => now(),
             ]);
 
@@ -169,7 +169,7 @@ Respond in clean JSON format like this:
 ]";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-4',
+                'model' => 'gpt-3.5-turbo',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -259,7 +259,7 @@ Generate a comprehensive prompt that includes:
 Make it detailed and actionable for AI code generation tools.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-4',
+                'model' => 'gpt-3.5-turbo',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -276,7 +276,7 @@ Make it detailed and actionable for AI code generation tools.";
                 'idea_id' => $idea_id,
                 'type' => 'landing_page',
                 'content' => $generatedPrompt,
-                'used_tool' => 'gpt-4',
+                'used_tool' => 'gpt-3.5-turbo',
                 'generated_at' => now(),
             ]);
 
