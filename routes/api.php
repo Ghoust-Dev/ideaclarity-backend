@@ -101,8 +101,8 @@ Route::middleware(['supabase.auth'])->group(function () {
     // User info endpoint
     Route::get('/user', function (Request $request) {
         return response()->json([
-            'user_id' => $request->input('user_id'),
-            'email' => $request->input('user_email'),
+            'user_id' => $request->attributes->get('user_id'),
+            'email' => $request->attributes->get('user_email'),
             'authenticated' => true
         ]);
     });
@@ -111,9 +111,9 @@ Route::middleware(['supabase.auth'])->group(function () {
     Route::get('/debug/auth', function (Request $request) {
         return response()->json([
             'message' => 'Auth middleware working',
-            'user_id' => $request->input('user_id'),
-            'user_email' => $request->input('user_email'),
-            'user_data_keys' => array_keys($request->input('user_data', [])),
+            'user_id' => $request->attributes->get('user_id'),
+            'user_email' => $request->attributes->get('user_email'),
+            'user_data_keys' => array_keys($request->attributes->get('user_data', [])),
             'timestamp' => now()
         ]);
     });
@@ -142,8 +142,8 @@ Route::middleware(['supabase.auth'])->group(function () {
             return response()->json([
                 'message' => 'Competitors endpoint test',
                 'idea_id' => $idea_id,
-                'user_id' => $request->input('user_id'),
-                'user_email' => $request->input('user_email'),
+                'user_id' => $request->attributes->get('user_id'),
+                'user_email' => $request->attributes->get('user_email'),
                 'note' => 'Use POST method to actually generate competitors',
                 'timestamp' => now()
             ]);

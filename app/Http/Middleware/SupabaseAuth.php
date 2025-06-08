@@ -80,12 +80,10 @@ class SupabaseAuth
                         'user_email' => $userData['email'] ?? 'not_found'
                     ]);
                     
-                    // Add user info to request
-                    $request->merge([
-                        'user_id' => $userData['id'] ?? null,
-                        'user_email' => $userData['email'] ?? null,
-                        'user_data' => (object) $userData
-                    ]);
+                    // Add user info to request attributes (not merge - avoids Symfony limitation)
+                    $request->attributes->set('user_id', $userData['id'] ?? null);
+                    $request->attributes->set('user_email', $userData['email'] ?? null);
+                    $request->attributes->set('user_data', $userData); // Array, not object
                     
                     return $next($request);
                 }
@@ -100,12 +98,10 @@ class SupabaseAuth
                 'user_email' => $userData['email'] ?? 'not_found'
             ]);
             
-            // Add user info to request for use in controllers
-            $request->merge([
-                'user_id' => $userData['id'] ?? null,
-                'user_email' => $userData['email'] ?? null,
-                'user_data' => (object) $userData
-            ]);
+            // Add user info to request attributes (not merge - avoids Symfony limitation)
+            $request->attributes->set('user_id', $userData['id'] ?? null);
+            $request->attributes->set('user_email', $userData['email'] ?? null);
+            $request->attributes->set('user_data', $userData); // Array, not object
             
             return $next($request);
             

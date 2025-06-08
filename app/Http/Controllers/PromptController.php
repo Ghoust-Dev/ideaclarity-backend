@@ -63,7 +63,7 @@ Generate only the tweet text, nothing else.";
             // Save to database using Supabase user ID
             GeneratedPrompt::create([
                 'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $request->input('user_id'), // From Supabase middleware
+                'user_id' => $request->attributes->get('user_id'), // From Supabase middleware
                 'idea_id' => $idea_id,
                 'type' => 'tweet',
                 'content' => $tweetContent,
@@ -149,7 +149,7 @@ Respond in clean JSON format like this:
             DB::table('competitor_results')->insert([
                 'id' => \Illuminate\Support\Str::uuid(),
                 'idea_id' => $idea_id,
-                'user_id' => $request->input('user_id'), // From Supabase middleware
+                'user_id' => $request->attributes->get('user_id'), // From Supabase middleware
                 'competitors_data' => $competitorsJson,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -212,7 +212,7 @@ Make it detailed and actionable for AI code generation tools.";
             // Save to database using Supabase user ID
             GeneratedPrompt::create([
                 'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $request->input('user_id'), // From Supabase middleware
+                'user_id' => $request->attributes->get('user_id'), // From Supabase middleware
                 'idea_id' => $idea_id,
                 'type' => 'landing_page',
                 'content' => $generatedPrompt,

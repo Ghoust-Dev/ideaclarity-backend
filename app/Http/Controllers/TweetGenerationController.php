@@ -73,7 +73,7 @@ class TweetGenerationController extends Controller
             // Save the generated tweet to database
             $generatedPrompt = GeneratedPrompt::create([
                 'id' => Str::uuid(),
-                'user_id' => $request->input('user_id'),
+                'user_id' => $request->attributes->get('user_id'),
                 'idea_id' => $request->input('idea_id'),
                 'type' => 'tweet',
                 'content' => $generatedTweet,
@@ -158,7 +158,7 @@ class TweetGenerationController extends Controller
     public function getTweetHistory(Request $request): JsonResponse
     {
         try {
-            $userId = $request->input('user_id');
+            $userId = $request->attributes->get('user_id');
             
             $tweets = GeneratedPrompt::where('user_id', $userId)
                 ->where('type', 'tweet')
