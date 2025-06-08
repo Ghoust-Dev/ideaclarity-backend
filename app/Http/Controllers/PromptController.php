@@ -51,7 +51,7 @@ Requirements:
 Generate only the tweet text, nothing else.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-3.5-turbo',
+                'model' => 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -68,7 +68,7 @@ Generate only the tweet text, nothing else.";
                 'idea_id' => $idea_id,
                 'type' => 'tweet',
                 'content' => $tweetContent,
-                'used_tool' => 'gpt-3.5-turbo',
+                'used_tool' => 'gpt-4o-mini',
                 'generated_at' => now(),
             ]);
 
@@ -169,7 +169,7 @@ Respond in clean JSON format like this:
 ]";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-3.5-turbo',
+                'model' => 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -221,6 +221,53 @@ Respond in clean JSON format like this:
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
+
+            // If OpenAI fails (quota/billing), provide mock data for testing
+            if (strpos($e->getMessage(), 'quota') !== false || strpos($e->getMessage(), 'billing') !== false) {
+                Log::info('💡 PROVIDING MOCK COMPETITORS DATA (OpenAI quota exceeded)');
+                
+                $mockCompetitors = [
+                    [
+                        'name' => 'Asana',
+                        'price' => '$10.99/mo',
+                        'strengths' => ['Great team collaboration', 'Visual project boards', 'Extensive integrations'],
+                        'weaknesses' => ['Can be overwhelming for simple tasks', 'Limited AI features'],
+                        'link' => 'https://asana.com'
+                    ],
+                    [
+                        'name' => 'Todoist',
+                        'price' => '$4/mo',
+                        'strengths' => ['Clean interface', 'Natural language processing', 'Cross-platform sync'],
+                        'weaknesses' => ['Limited team features', 'No built-in time tracking'],
+                        'link' => 'https://todoist.com'
+                    ],
+                    [
+                        'name' => 'ClickUp',
+                        'price' => '$7/mo',
+                        'strengths' => ['All-in-one workspace', 'Customizable views', 'Time tracking'],
+                        'weaknesses' => ['Steep learning curve', 'Can be slow with large datasets'],
+                        'link' => 'https://clickup.com'
+                    ]
+                ];
+
+                // Save mock data to database
+                DB::table('competitor_results')->insert([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'idea_id' => $idea->id,
+                    'user_id' => $request->attributes->get('user_id'),
+                    'competitors_data' => json_encode($mockCompetitors),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                return response()->json([
+                    'competitors' => $mockCompetitors,
+                    'cached' => false,
+                    'mock' => true,
+                    'message' => 'OpenAI quota exceeded. Showing sample competitors for testing.'
+                ]);
+            }
+
             return response()->json(['error' => 'Failed to generate competitors: ' . $e->getMessage()], 500);
         }
     }
@@ -259,7 +306,7 @@ Generate a comprehensive prompt that includes:
 Make it detailed and actionable for AI code generation tools.";
 
             $response = OpenAI::chat()->create([
-                'model' => 'gpt-3.5-turbo',
+                'model' => 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
                 ],
@@ -276,7 +323,7 @@ Make it detailed and actionable for AI code generation tools.";
                 'idea_id' => $idea_id,
                 'type' => 'landing_page',
                 'content' => $generatedPrompt,
-                'used_tool' => 'gpt-3.5-turbo',
+                'used_tool' => 'gpt-4o-mini',
                 'generated_at' => now(),
             ]);
 
