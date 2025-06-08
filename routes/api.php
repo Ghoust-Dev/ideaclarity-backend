@@ -34,22 +34,29 @@ Route::get('/ping', function () {
     return response()->json(['message' => 'pong'], 200);
 });
 
-// Public ideas endpoint
+// Public endpoints (no auth required)
 Route::get('/public-ideas', [IdeaWallController::class, 'getPublicIdeas']);
 
-// User authentication endpoints
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-// Tweet generation routes
-Route::post('/generate-tweet', [TweetGenerationController::class, 'generateTweet']);
-Route::post('/post-tweet', [TweetGenerationController::class, 'postTweet']);
-Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']);
-
-// AI Prompt Generation Routes
-Route::prefix('prompts')->group(function () {
-    Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
-    Route::post('/competitors/{idea_id}', [PromptController::class, 'generateCompetitors']);
-    Route::post('/landing-page/{idea_id}', [PromptController::class, 'regenerateLandingPrompt']);
+// Protected endpoints (require Supabase authentication)
+Route::middleware(['supabase.auth'])->group(function () {
+    // User info endpoint
+    Route::get('/user', function (Request $request) {
+        return response()->json([
+            'user_id' => $request->input('user_id'),
+            'email' => $request->input('user_email'),
+            'authenticated' => true
+        ]);
+    });
+    
+    // AI Prompt Generation Routes
+    Route::prefix('prompts')->group(function () {
+        Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
+        Route::post('/competitors/{idea_id}', [PromptController::class, 'generateCompetitors']);
+        Route::post('/landing-page/{idea_id}', [PromptController::class, 'regenerateLandingPrompt']);
+    });
+    
+    // Tweet generation routes (legacy - may remove later)
+    Route::post('/generate-tweet', [TweetGenerationController::class, 'generateTweet']);
+    Route::post('/post-tweet', [TweetGenerationController::class, 'postTweet']);
+    Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']);
 }); 

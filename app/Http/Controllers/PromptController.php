@@ -60,10 +60,10 @@ Generate only the tweet text, nothing else.";
 
             $tweetContent = trim($response->choices[0]->message->content);
 
-            // Save to database
+            // Save to database using Supabase user ID
             GeneratedPrompt::create([
                 'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $request->user()->id ?? null,
+                'user_id' => $request->input('user_id'), // From Supabase middleware
                 'idea_id' => $idea_id,
                 'type' => 'tweet',
                 'content' => $tweetContent,
@@ -145,11 +145,11 @@ Respond in clean JSON format like this:
                 throw new \Exception('Invalid JSON response from AI');
             }
 
-            // Save to database
+            // Save to database using Supabase user ID
             DB::table('competitor_results')->insert([
                 'id' => \Illuminate\Support\Str::uuid(),
                 'idea_id' => $idea_id,
-                'user_id' => $request->user()->id ?? null,
+                'user_id' => $request->input('user_id'), // From Supabase middleware
                 'competitors_data' => $competitorsJson,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -209,10 +209,10 @@ Make it detailed and actionable for AI code generation tools.";
 
             $generatedPrompt = trim($response->choices[0]->message->content);
 
-            // Save to database
+            // Save to database using Supabase user ID
             GeneratedPrompt::create([
                 'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $request->user()->id ?? null,
+                'user_id' => $request->input('user_id'), // From Supabase middleware
                 'idea_id' => $idea_id,
                 'type' => 'landing_page',
                 'content' => $generatedPrompt,

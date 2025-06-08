@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\Cors::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
+        
+        // Register custom middleware aliases
+        $middleware->alias([
+            'supabase.auth' => \App\Http\Middleware\SupabaseAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
