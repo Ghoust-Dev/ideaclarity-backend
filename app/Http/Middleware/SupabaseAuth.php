@@ -29,30 +29,67 @@ class SupabaseAuth
         try {
             $token = substr($authHeader, 7); // Remove 'Bearer ' prefix
             $supabaseUrl = env('SUPABASE_URL', 'https://gyckxadiumjtdpxpsmbn.supabase.co');
+            $anonKey = env('SUPABASE_ANON_KEY', '');
             
             // DEBUG: Log setup
             Log::info('🔑 SUPABASE VERIFICATION:', [
                 'token_length' => strlen($token),
-                'supabase_url' => $supabaseUrl
+                'supabase_url' => $supabaseUrl,
+                'anon_key_length' => strlen($anonKey)
             ]);
             
-            // Verify token by calling Supabase user endpoint
+            // Verify token by calling Supabase user endpoint with correct headers
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
-                'apikey' => env('SUPABASE_ANON_KEY', ''),
-                'Content-Type' => 'application/json'
+                'apikey' => $anonKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
             ])->timeout(10)->get($supabaseUrl . '/auth/v1/user');
             
             Log::info('📡 SUPABASE API CALL:', [
                 'status' => $response->status(),
-                'success' => $response->successful()
+                'success' => $response->successful(),
+                'headers_sent' => [
+                    'Authorization' => 'Bearer ' . substr($token, 0, 20) . '...',
+                    'apikey' => substr($anonKey, 0, 20) . '...',
+                ]
             ]);
             
             if (!$response->successful()) {
                 Log::error('❌ SUPABASE VERIFICATION FAILED:', [
                     'status' => $response->status(),
-                    'response' => $response->body()
+                    'response' => $response->body(),
+                    'headers' => $response->headers()
                 ]);
+                
+                // For debugging, let's try without the anon key
+                $responseNoApiKey = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json'
+                ])->timeout(10)->get($supabaseUrl . '/auth/v1/user');
+                
+                Log::info('🔄 RETRY WITHOUT APIKEY:', [
+                    'status' => $responseNoApiKey->status(),
+                    'success' => $responseNoApiKey->successful()
+                ]);
+                
+                if ($responseNoApiKey->successful()) {
+                    $userData = $responseNoApiKey->json();
+                    Log::info('✅ SUPABASE VERIFICATION SUCCESS (NO APIKEY):', [
+                        'user_id' => $userData['id'] ?? 'not_found',
+                        'user_email' => $userData['email'] ?? 'not_found'
+                    ]);
+                    
+                    // Add user info to request
+                    $request->merge([
+                        'user_id' => $userData['id'] ?? null,
+                        'user_email' => $userData['email'] ?? null,
+                        'user_data' => (object) $userData
+                    ]);
+                    
+                    return $next($request);
+                }
+                
                 return response()->json(['error' => 'Invalid or expired token'], 401);
             }
             

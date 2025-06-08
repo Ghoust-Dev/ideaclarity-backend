@@ -25,4 +25,12 @@ class IdeaWallController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all public ideas (alias for index method)
+     */
+    public function getPublicIdeas()
+    {
+        return $this->index();
+    }
 }
