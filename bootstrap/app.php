@@ -12,10 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->api(prepend: [
-            \App\Http\Middleware\Cors::class,
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+        // Temporarily comment out complex middleware to debug
+        // $middleware->api(prepend: [
+        //     \App\Http\Middleware\Cors::class,
+        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        // ]);
         
         // Register custom middleware aliases
         $middleware->alias([
