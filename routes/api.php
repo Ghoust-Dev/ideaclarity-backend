@@ -118,6 +118,19 @@ Route::middleware(['supabase.auth'])->group(function () {
         ]);
     });
     
+    // Debug JWT token details
+    Route::get('/debug/jwt', function (Request $request) {
+        $authHeader = $request->header('Authorization');
+        return response()->json([
+            'auth_header_present' => !empty($authHeader),
+            'auth_header_format' => $authHeader ? substr($authHeader, 0, 20) . '...' : null,
+            'bearer_format' => str_starts_with($authHeader ?? '', 'Bearer '),
+            'token_length' => $authHeader ? strlen(substr($authHeader, 7)) : 0,
+            'jwt_secret_set' => !empty(env('SUPABASE_JWT_SECRET')),
+            'timestamp' => now()
+        ]);
+    });
+    
     // AI Prompt Generation Routes
     Route::prefix('prompts')->group(function () {
         Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
