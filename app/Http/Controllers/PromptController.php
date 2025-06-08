@@ -7,6 +7,7 @@ use App\Models\GeneratedPrompt;
 use App\Models\User;
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PromptController extends Controller
 {
@@ -84,12 +85,25 @@ Generate only the tweet text, nothing else.";
     public function generateCompetitors($idea_id, Request $request)
     {
         try {
+            // DEBUG: Log that we've entered the method
+            Log::info('🏁 COMPETITORS START:', [
+                'idea_id' => $idea_id,
+                'user_id' => $request->attributes->get('user_id'),
+                'user_email' => $request->attributes->get('user_email')
+            ]);
+
             // Get the idea from public_ideas table
             $idea = DB::table('public_ideas')->where('id', $idea_id)->first();
             
             if (!$idea) {
+                Log::warning('❌ IDEA NOT FOUND:', ['idea_id' => $idea_id]);
                 return response()->json(['error' => 'Idea not found'], 404);
             }
+
+            Log::info('✅ IDEA FOUND:', [
+                'idea_title' => $idea->title ?? 'no_title',
+                'idea_problem' => $idea->problem_summary ?? 'no_problem'
+            ]);
 
             // Check for existing competitors (cache for 24 hours)
             $existingCompetitors = DB::table('competitor_results')
@@ -98,11 +112,14 @@ Generate only the tweet text, nothing else.";
                 ->first();
 
             if ($existingCompetitors) {
+                Log::info('📦 RETURNING CACHED COMPETITORS');
                 return response()->json([
                     'competitors' => json_decode($existingCompetitors->competitors_data),
                     'cached' => true
                 ]);
             }
+
+            Log::info('🤖 CALLING OPENAI for competitors');
 
             // Generate competitors using OpenAI
             $prompt = "List 2-3 SaaS competitors similar to the following idea:
@@ -138,12 +155,25 @@ Respond in clean JSON format like this:
                 'temperature' => 0.7,
             ]);
 
+            Log::info('✅ OPENAI RESPONSE RECEIVED');
+
             $competitorsJson = trim($response->choices[0]->message->content);
             $competitors = json_decode($competitorsJson, true);
 
+            Log::info('📊 PARSING RESULTS:', [
+                'json_length' => strlen($competitorsJson),
+                'parsed_successfully' => !is_null($competitors),
+                'competitors_count' => is_array($competitors) ? count($competitors) : 0
+            ]);
+
             if (!$competitors) {
+                Log::error('❌ JSON PARSING FAILED:', [
+                    'raw_response' => substr($competitorsJson, 0, 500) . '...'
+                ]);
                 throw new \Exception('Invalid JSON response from AI');
             }
+
+            Log::info('💾 SAVING TO DATABASE');
 
             // Save to database using Supabase user ID
             DB::table('competitor_results')->insert([
@@ -155,12 +185,20 @@ Respond in clean JSON format like this:
                 'updated_at' => now(),
             ]);
 
+            Log::info('✅ COMPETITORS GENERATION COMPLETE');
+
             return response()->json([
                 'competitors' => $competitors,
                 'cached' => false
             ]);
 
         } catch (\Exception $e) {
+            Log::error('❌ COMPETITORS ERROR:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['error' => 'Failed to generate competitors: ' . $e->getMessage()], 500);
         }
     }
