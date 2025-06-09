@@ -412,4 +412,156 @@ Design Requirements:
             return response()->json(['error' => 'Failed to generate landing prompt: ' . $e->getMessage()], 500);
         }
     }
+
+    public function generateSurvey($idea_id, Request $request)
+    {
+        try {
+            // Get the idea from public_ideas table
+            $idea = DB::table('public_ideas')->where('id', $idea_id)->first();
+            
+            if (!$idea) {
+                return response()->json(['error' => 'Idea not found'], 404);
+            }
+
+            // Check if we have a recent survey for this idea
+            $existingSurvey = GeneratedPrompt::where('idea_id', $idea_id)
+                ->where('type', 'survey')
+                ->where('generated_at', '>', now()->subHours(24)) // Cache for 24 hours
+                ->first();
+
+            if ($existingSurvey) {
+                return response()->json([
+                    'survey' => json_decode($existingSurvey->content),
+                    'cached' => true
+                ]);
+            }
+
+            // Generate survey using OpenAI
+            $prompt = "Create a short validation survey for this startup idea:
+
+Title: {$idea->title}
+Problem: " . ($idea->problem_summary ?? $idea->description ?? "Innovative solution for " . $idea->title) . "
+
+Generate 5-7 validation questions that would help determine:
+- How often people face this problem
+- What they currently do to solve it
+- What they would pay for a solution
+- Which features are most important
+- How they discovered similar solutions
+
+Return as JSON with this structure:
+{
+  \"title\": \"Survey title\",
+  \"description\": \"Brief survey description\",
+  \"questions\": [
+    {
+      \"id\": 1,
+      \"type\": \"multiple_choice\",
+      \"question\": \"Question text\",
+      \"options\": [\"Option 1\", \"Option 2\", \"Option 3\", \"Option 4\"]
+    },
+    {
+      \"id\": 2,
+      \"type\": \"text\",
+      \"question\": \"Open-ended question text\"
+    },
+    {
+      \"id\": 3,
+      \"type\": \"scale\",
+      \"question\": \"Rating question text\",
+      \"scale\": {\"min\": 1, \"max\": 5, \"min_label\": \"Not at all\", \"max_label\": \"Extremely\"}
+    }
+  ]
+}";
+
+            $response = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'max_tokens' => 800,
+                'temperature' => 0.7,
+            ]);
+
+            $surveyContent = trim($response->choices[0]->message->content);
+            
+            // Parse JSON response
+            $surveyData = json_decode($surveyContent, true);
+            if (!$surveyData) {
+                throw new \Exception('Invalid JSON response from OpenAI');
+            }
+
+            // Save to database using Supabase user ID
+            GeneratedPrompt::create([
+                'id' => \Illuminate\Support\Str::uuid(),
+                'user_id' => $request->attributes->get('user_id'), // From Supabase middleware
+                'idea_id' => $idea_id,
+                'type' => 'survey',
+                'content' => $surveyContent,
+                'used_tool' => 'gpt-4o-mini',
+                'generated_at' => now(),
+            ]);
+
+            return response()->json([
+                'survey' => $surveyData,
+                'cached' => false
+            ]);
+
+        } catch (\Exception $e) {
+            // If OpenAI fails (quota/billing), provide mock survey for testing
+            if (strpos($e->getMessage(), 'quota') !== false || strpos($e->getMessage(), 'billing') !== false) {
+                Log::info('💡 PROVIDING MOCK SURVEY DATA (OpenAI quota exceeded)');
+                
+                $mockSurvey = [
+                    'title' => "Validate Your Interest in {$idea->title}",
+                    'description' => 'Help us understand if this solution would be valuable to you',
+                    'questions' => [
+                        [
+                            'id' => 1,
+                            'type' => 'multiple_choice',
+                            'question' => 'How often do you encounter this problem?',
+                            'options' => ['Daily', 'Weekly', 'Monthly', 'Rarely', 'Never']
+                        ],
+                        [
+                            'id' => 2,
+                            'type' => 'multiple_choice',
+                            'question' => 'What would you pay for a solution?',
+                            'options' => ['Free only', '$1-10/month', '$11-50/month', '$51-100/month', '$100+/month']
+                        ],
+                        [
+                            'id' => 3,
+                            'type' => 'scale',
+                            'question' => 'How interested are you in this solution?',
+                            'scale' => ['min' => 1, 'max' => 5, 'min_label' => 'Not interested', 'max_label' => 'Very interested']
+                        ],
+                        [
+                            'id' => 4,
+                            'type' => 'text',
+                            'question' => 'What other solutions have you tried for this problem?'
+                        ]
+                    ]
+                ];
+
+                // Save mock survey to database
+                GeneratedPrompt::create([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'user_id' => $request->attributes->get('user_id'),
+                    'idea_id' => $idea_id,
+                    'type' => 'survey',
+                    'content' => json_encode($mockSurvey),
+                    'used_tool' => 'mock-fallback',
+                    'generated_at' => now(),
+                ]);
+
+                return response()->json([
+                    'survey' => $mockSurvey,
+                    'cached' => false,
+                    'mock' => true,
+                    'message' => 'OpenAI quota exceeded. Showing sample survey for testing.'
+                ]);
+            }
+
+            return response()->json(['error' => 'Failed to generate survey: ' . $e->getMessage()], 500);
+        }
+    }
 } 
