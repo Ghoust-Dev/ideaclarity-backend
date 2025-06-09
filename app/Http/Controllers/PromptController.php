@@ -78,6 +78,31 @@ Generate only the tweet text, nothing else.";
             ]);
 
         } catch (\Exception $e) {
+            // If OpenAI fails (quota/billing), provide mock tweet for testing
+            if (strpos($e->getMessage(), 'quota') !== false || strpos($e->getMessage(), 'billing') !== false) {
+                Log::info('💡 PROVIDING MOCK TWEET DATA (OpenAI quota exceeded)');
+                
+                $mockTweet = "I'm working on {$idea->title} - an innovative solution for modern productivity challenges. What do you think? Would this solve a problem for you? #startup #buildinpublic #AI";
+
+                // Save mock tweet to database
+                GeneratedPrompt::create([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'user_id' => $request->attributes->get('user_id'),
+                    'idea_id' => $idea_id,
+                    'type' => 'tweet',
+                    'content' => $mockTweet,
+                    'used_tool' => 'mock-fallback',
+                    'generated_at' => now(),
+                ]);
+
+                return response()->json([
+                    'tweet' => $mockTweet,
+                    'cached' => false,
+                    'mock' => true,
+                    'message' => 'OpenAI quota exceeded. Showing sample tweet for testing.'
+                ]);
+            }
+
             return response()->json(['error' => 'Failed to generate tweet: ' . $e->getMessage()], 500);
         }
     }
@@ -333,6 +358,57 @@ Make it detailed and actionable for AI code generation tools.";
             ]);
 
         } catch (\Exception $e) {
+            // If OpenAI fails (quota/billing), provide mock landing page prompt for testing
+            if (strpos($e->getMessage(), 'quota') !== false || strpos($e->getMessage(), 'billing') !== false) {
+                Log::info('💡 PROVIDING MOCK LANDING PAGE PROMPT (OpenAI quota exceeded)');
+                
+                $mockPrompt = "Design a modern SaaS landing page for a product called \"{$idea->title}\".
+
+Hero Section:
+- Main headline: \"{$heroTitle}\"
+- Subheadline: \"{$subtitle}\"
+- Primary CTA button: \"{$ctaText}\"
+
+This tool solves important problems for developers and tech professionals.
+
+Page Structure:
+- Strong hero section with the above headline and CTA
+- Problem/solution section explaining the pain solved
+- 3 key feature blocks with icons:
+  * Smart automation features
+  * Intuitive user interface
+  * Seamless integrations
+- Social proof section (testimonials or user count)
+- Footer with Terms, Privacy, and Contact links
+
+Design Requirements:
+- Developer-friendly design with dark theme option
+- Minimal and clean UI with modern gradients
+- Subtle animations and micro-interactions
+- Responsive layout for mobile and desktop
+- Professional typography and readable layout
+- Use blue/teal accent colors for CTAs and highlights
+- Clean code structure optimized for performance";
+
+                // Save mock prompt to database
+                GeneratedPrompt::create([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'user_id' => $request->attributes->get('user_id'),
+                    'idea_id' => $idea_id,
+                    'type' => 'landing_page',
+                    'content' => $mockPrompt,
+                    'used_tool' => 'mock-fallback',
+                    'generated_at' => now(),
+                ]);
+
+                return response()->json([
+                    'prompt' => $mockPrompt,
+                    'cached' => false,
+                    'mock' => true,
+                    'message' => 'OpenAI quota exceeded. Showing sample landing page prompt for testing.'
+                ]);
+            }
+
             return response()->json(['error' => 'Failed to generate landing prompt: ' . $e->getMessage()], 500);
         }
     }
