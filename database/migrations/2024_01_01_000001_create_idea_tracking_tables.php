@@ -26,7 +26,7 @@ return new class extends Migration
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
             $table->uuid('user_id');
             $table->uuid('idea_id');
-            $table->string('step')->check("step IN ('landing', 'tweet', 'competitor', 'discussion', 'survey')");
+            $table->string('step')->check("step IN ('landing', 'tweet', 'competitor', 'discussion', 'survey', 'domain')");
             $table->boolean('completed')->default(false);
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();

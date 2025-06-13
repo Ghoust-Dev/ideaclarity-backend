@@ -13,7 +13,7 @@ class ValidationController extends Controller
         try {
             $request->validate([
                 'idea_id' => 'required|uuid',
-                'step' => 'required|string|in:landing,tweet,competitor,discussion,survey'
+                'step' => 'required|string|in:landing,tweet,competitor,discussion,survey,domain'
             ]);
 
             $userId = $request->attributes->get('user_id');
@@ -101,7 +101,7 @@ class ValidationController extends Controller
 
     private function getProgressData($userId, $ideaId)
     {
-        $steps = ['landing', 'tweet', 'competitor', 'discussion', 'survey'];
+        $steps = ['landing', 'tweet', 'competitor', 'discussion', 'survey', 'domain'];
         $progress = [];
 
         $completed = DB::table('validation_progress')
