@@ -8,89 +8,53 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\DeepSeekService;
 
 class TweetGenerationController extends Controller
 {
+    protected $deepseekService;
+
+    public function __construct(DeepSeekService $deepseekService)
+    {
+        $this->deepseekService = $deepseekService;
+    }
+
     /**
      * Generate a tweet using GPT-4 based on idea details
      */
     public function generateTweet(Request $request): JsonResponse
     {
         try {
+            // Validate the request
             $request->validate([
                 'idea_title' => 'required|string|max:255',
-                'idea_description' => 'required|string',
-                'user_id' => 'required|string',
-                'idea_id' => 'required|string',
+                'idea_description' => 'required|string|max:1000',
             ]);
 
             $ideaTitle = $request->input('idea_title');
             $ideaDescription = $request->input('idea_description');
 
-            // Create GPT-4 prompt for tweet generation
-            $prompt = "Generate an engaging tweet for a startup idea called '{$ideaTitle}'. 
-                      Description: {$ideaDescription}
-                      
-                      The tweet should:
-                      - Be under 280 characters
-                      - Ask for feedback from the community
-                      - Include relevant hashtags like #startup #buildinpublic #feedback
-                      - Be conversational and genuine
-                      - Encourage engagement
-                      
-                      Return only the tweet text, nothing else.";
-
-            // Call OpenAI GPT-4 API
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
-                'Content-Type' => 'application/json',
-            ])->post('https://api.openai.com/v1/chat/completions', [
-                'model' => 'gpt-4',
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => 'You are a social media expert who creates engaging tweets for startup founders.'
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ],
-                'max_tokens' => 100,
-                'temperature' => 0.7,
-            ]);
-
-            if (!$response->successful()) {
-                return response()->json([
-                    'error' => 'Failed to generate tweet',
-                    'details' => $response->body()
-                ], 500);
-            }
-
-            $responseData = $response->json();
-            $generatedTweet = trim($responseData['choices'][0]['message']['content']);
-
-            // Save the generated tweet to database
-            $generatedPrompt = GeneratedPrompt::create([
-                'id' => Str::uuid(),
-                'user_id' => $request->attributes->get('user_id'),
-                'idea_id' => $request->input('idea_id'),
-                'type' => 'tweet',
-                'content' => $generatedTweet,
-                'generated_at' => now(),
-            ]);
+            // Generate tweet using DeepSeek
+            $tweet = $this->deepseekService->generateTweet($ideaTitle, $ideaDescription);
 
             return response()->json([
                 'success' => true,
-                'tweet' => $generatedTweet,
-                'prompt_id' => $generatedPrompt->id,
-                'character_count' => strlen($generatedTweet)
+                'tweet' => $tweet,
+                'message' => 'Tweet generated successfully with DeepSeek AI'
             ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $e->errors()
+            ], 422);
 
         } catch (\Exception $e) {
             Log::error('Tweet generation failed: ' . $e->getMessage());
-            
+
             return response()->json([
+                'success' => false,
                 'error' => 'Failed to generate tweet',
                 'message' => $e->getMessage()
             ], 500);
