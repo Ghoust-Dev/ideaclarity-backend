@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\IdeaWallController;
 use App\Http\Controllers\TweetGenerationController;
 use App\Http\Controllers\PromptController;
@@ -40,6 +42,56 @@ Route::get('/ping', function () {
 
 // Public endpoints (no auth required)
 Route::get('/public-ideas', [IdeaWallController::class, 'getPublicIdeas']);
+
+// OpenRouter API proxy endpoint
+Route::post('/openrouter', function (Request $request) {
+    try {
+        $apiKey = env('OPENROUTER_API_KEY');
+        
+        if (!$apiKey) {
+            Log::error('OpenRouter API key not found in environment');
+            return response()->json(['error' => 'API key not configured'], 500);
+        }
+
+        Log::info('Making OpenRouter API call from Laravel backend');
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type' => 'application/json',
+            'HTTP-Referer' => 'https://ideaclarity.vercel.app',
+            'X-Title' => 'IdeaClarity',
+        ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+            'model' => $request->input('model', 'mistralai/mistral-7b-instruct'),
+            'messages' => $request->input('messages'),
+            'max_tokens' => $request->input('max_tokens', 1500),
+            'temperature' => $request->input('temperature', 0.7),
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('OpenRouter API Error', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+            return response()->json([
+                'error' => 'OpenRouter API Error: ' . $response->status(),
+                'details' => $response->body()
+            ], $response->status());
+        }
+
+        Log::info('OpenRouter API call successful');
+        return response()->json($response->json());
+        
+    } catch (\Exception $e) {
+        Log::error('OpenRouter endpoint error', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'error' => 'Internal server error',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+});
 
 // Test endpoints (for debugging)
 Route::get('/test/idea/{idea_id}', function ($idea_id) {
