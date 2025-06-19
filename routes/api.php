@@ -257,3 +257,107 @@ Route::middleware(['supabase.auth'])->group(function () {
     Route::post('/roadmap/progress', [RoadmapController::class, 'update']);
     Route::get('/roadmap/{idea}', [RoadmapController::class, 'get']);
 }); 
+        return response()->json([
+            'auth_header_present' => !empty($authHeader),
+            'auth_header_format' => $authHeader ? substr($authHeader, 0, 20) . '...' : null,
+            'bearer_format' => str_starts_with($authHeader ?? '', 'Bearer '),
+            'token_length' => $authHeader ? strlen(substr($authHeader, 7)) : 0,
+            'jwt_secret_set' => !empty(env('SUPABASE_JWT_SECRET')),
+            'timestamp' => now()
+        ]);
+    });
+    
+    // AI Prompt Generation Routes
+    Route::prefix('prompts')->group(function () {
+        Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
+        Route::post('/competitors/{idea_id}', [PromptController::class, 'generateCompetitors']);
+        Route::post('/landing-page/{idea_id}', [PromptController::class, 'regenerateLandingPrompt']);
+        Route::post('/survey/{idea_id}', [PromptController::class, 'generateSurvey']);
+        
+        // GET routes for testing (these should work in browser)
+        Route::get('/test/competitors/{idea_id}', function ($idea_id, Request $request) {
+            return response()->json([
+                'message' => 'Competitors endpoint test',
+                'idea_id' => $idea_id,
+                'user_id' => $request->attributes->get('user_id'),
+                'user_email' => $request->attributes->get('user_email'),
+                'note' => 'Use POST method to actually generate competitors',
+                'timestamp' => now()
+            ]);
+        });
+    });
+    
+    // Tweet generation routes (legacy - may remove later)
+    Route::post('/generate-tweet', [TweetGenerationController::class, 'generateTweet']);
+    Route::post('/post-tweet', [TweetGenerationController::class, 'postTweet']);
+    Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']);
+
+    // Idea Management Routes
+    Route::post('/ideas/save', [IdeaController::class, 'save']);
+    Route::get('/ideas/saved', [IdeaController::class, 'getSaved']);
+    Route::delete('/ideas/unsave', [IdeaController::class, 'unsave']);
+
+    // Validation Progress Routes
+    Route::post('/validation-progress', [ValidationController::class, 'markStep']);
+    Route::get('/validation-progress/{idea}', [ValidationController::class, 'getProgress']);
+
+    // 48h Challenge Routes
+    Route::post('/challenge/start', [ChallengeController::class, 'start']);
+    Route::get('/challenge/{idea}', [ChallengeController::class, 'status']);
+
+    // Roadmap Progress Routes
+    Route::post('/roadmap/progress', [RoadmapController::class, 'update']);
+    Route::get('/roadmap/{idea}', [RoadmapController::class, 'get']);
+}); 
+        return response()->json([
+            'auth_header_present' => !empty($authHeader),
+            'auth_header_format' => $authHeader ? substr($authHeader, 0, 20) . '...' : null,
+            'bearer_format' => str_starts_with($authHeader ?? '', 'Bearer '),
+            'token_length' => $authHeader ? strlen(substr($authHeader, 7)) : 0,
+            'jwt_secret_set' => !empty(env('SUPABASE_JWT_SECRET')),
+            'timestamp' => now()
+        ]);
+    });
+    
+    // AI Prompt Generation Routes
+    Route::prefix('prompts')->group(function () {
+        Route::post('/tweet/{idea_id}', [PromptController::class, 'generateTweet']);
+        Route::post('/competitors/{idea_id}', [PromptController::class, 'generateCompetitors']);
+        Route::post('/landing-page/{idea_id}', [PromptController::class, 'regenerateLandingPrompt']);
+        Route::post('/survey/{idea_id}', [PromptController::class, 'generateSurvey']);
+        
+        // GET routes for testing (these should work in browser)
+        Route::get('/test/competitors/{idea_id}', function ($idea_id, Request $request) {
+            return response()->json([
+                'message' => 'Competitors endpoint test',
+                'idea_id' => $idea_id,
+                'user_id' => $request->attributes->get('user_id'),
+                'user_email' => $request->attributes->get('user_email'),
+                'note' => 'Use POST method to actually generate competitors',
+                'timestamp' => now()
+            ]);
+        });
+    });
+    
+    // Tweet generation routes (legacy - may remove later)
+    Route::post('/generate-tweet', [TweetGenerationController::class, 'generateTweet']);
+    Route::post('/post-tweet', [TweetGenerationController::class, 'postTweet']);
+    Route::get('/tweet-history', [TweetGenerationController::class, 'getTweetHistory']);
+
+    // Idea Management Routes
+    Route::post('/ideas/save', [IdeaController::class, 'save']);
+    Route::get('/ideas/saved', [IdeaController::class, 'getSaved']);
+    Route::delete('/ideas/unsave', [IdeaController::class, 'unsave']);
+
+    // Validation Progress Routes
+    Route::post('/validation-progress', [ValidationController::class, 'markStep']);
+    Route::get('/validation-progress/{idea}', [ValidationController::class, 'getProgress']);
+
+    // 48h Challenge Routes
+    Route::post('/challenge/start', [ChallengeController::class, 'start']);
+    Route::get('/challenge/{idea}', [ChallengeController::class, 'status']);
+
+    // Roadmap Progress Routes
+    Route::post('/roadmap/progress', [RoadmapController::class, 'update']);
+    Route::get('/roadmap/{idea}', [RoadmapController::class, 'get']);
+}); 
